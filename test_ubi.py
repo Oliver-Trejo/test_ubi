@@ -1,11 +1,13 @@
 import streamlit as st
 from streamlit_javascript import st_javascript
+import folium
+from streamlit_folium import folium_static
 
-st.set_page_config(page_title="Mis Coordenadas GPS", layout="centered")
-st.title("📍 Obtén tus coordenadas GPS en tiempo real")
+st.set_page_config(page_title="GPS Real", layout="centered")
+st.title("📍 Obtén tu ubicación en tiempo real")
 
-# Obtener coordenadas desde el navegador (construido correctamente)
-coords = st_javascript("""
+# Obtener ubicación con JavaScript correctamente
+coordenadas = st_javascript("""
     async function getCoords() {
         return await new Promise((resolve) => {
             navigator.geolocation.getCurrentPosition(
@@ -17,9 +19,15 @@ coords = st_javascript("""
     getCoords();
 """)
 
-# Mostrar coordenadas si existen
-if coords and "lat" in coords and "lon" in coords:
-    st.success(f"✅ Coordenadas detectadas:")
-    st.code(f"Latitud: {coords['lat']}\nLongitud: {coords['lon']}")
+# Mostrar coordenadas y mapa si están disponibles
+if coordenadas and "lat" in coordenadas and "lon" in coordenadas:
+    lat = coordenadas["lat"]
+    lon = coordenadas["lon"]
+    st.success(f"✅ Coordenadas obtenidas:\nLatitud: {lat}\nLongitud: {lon}")
+
+    # Mostrar mapa con marcador
+    mapa = folium.Map(location=[lat, lon], zoom_start=15)
+    folium.Marker([lat, lon], tooltip="📍 Aquí estás").add_to(mapa)
+    folium_static(mapa)
 else:
-    st.warning("Activa los permisos de ubicación para continuar.")
+    st.warning("⚠️ Asegúrate de permitir el acceso a la ubicación en tu navegador.")
