@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_geolocation import streamlit_geolocation
 import folium
+from folium.features import CustomIcon
 from streamlit_folium import folium_static
 import requests
 
@@ -18,13 +19,24 @@ if location and location.get("latitude") and location.get("longitude"):
 
     # Crear mapa centrado
     mapa = folium.Map(location=[lat, lon], zoom_start=15)
-    folium.Marker([lat, lon], tooltip="📍 Tú", popup="Tu ubicación", icon=folium.Icon(color="blue")).add_to(mapa)
+
+    # Marcar ubicación del usuario
+    folium.Marker(
+        [lat, lon],
+        tooltip="📍 Tú",
+        popup="Tu ubicación",
+        icon=folium.Icon(color="blue")
+    ).add_to(mapa)
 
     # --- CONSULTA A GOOGLE PLACES API ---
     API_KEY = st.secrets["google_places_key"]
-    tipos = ["hospital", "clinic", "laboratory"]
+    tipo_iconos = {
+        "hospital": "https://cdn-icons-png.flaticon.com/512/1484/1484848.png",
+        "clinic": "https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
+        "laboratory": "https://cdn-icons-png.flaticon.com/512/3343/3343841.png"
+    }
 
-    for tipo in tipos:
+    for tipo, icon_url in tipo_iconos.items():
         url = (
             f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
             f"location={lat},{lon}&radius=3000&type={tipo}&key={API_KEY}"
@@ -37,14 +49,20 @@ if location and location.get("latitude") and location.get("longitude"):
             ubicacion = lugar["geometry"]["location"]
             direccion = lugar.get("vicinity", "")
 
+            # Crear ícono personalizado más grande
+            icono_personalizado = CustomIcon(
+                icon_image=icon_url,
+                icon_size=(40, 40)
+            )
+
             folium.Marker(
                 [ubicacion["lat"], ubicacion["lng"]],
                 popup=f"{nombre}\n{direccion}",
                 tooltip=nombre,
-                icon=folium.Icon(color="green", icon="plus-sign")
+                icon=icono_personalizado
             ).add_to(mapa)
 
-    # Mostrar mapa
+    # Mostrar el mapa con todos los marcadores
     folium_static(mapa)
 
 else:
