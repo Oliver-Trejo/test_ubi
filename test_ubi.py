@@ -4,38 +4,40 @@ import folium
 from streamlit_folium import folium_static
 import requests
 
-# --- CONFIGURACIÓN ---
-st.set_page_config(page_title="🧭 Clínicas cercanas", layout="centered")
-st.title("📍 Encuentra hospitales, clínicas y laboratorios cerca de ti")
+# Configuración general
+st.set_page_config(page_title="Ubicación y clínicas", layout="centered")
+st.title("📍 Encuentra clínicas, hospitales o laboratorios cerca de ti")
 
-# --- OBTENER UBICACIÓN ---
-location = streamlit_geolocation()
+# Botón para actualizar ubicación
+if st.button("🔄 Actualizar mi ubicación"):
+    st.session_state["ubicacion"] = streamlit_geolocation()
+
+# Recuperar ubicación guardada
+location = st.session_state.get("ubicacion", None)
 
 if location and location.get("latitude") and location.get("longitude"):
     lat = location["latitude"]
     lon = location["longitude"]
-    st.success(f"✅ Coordenadas detectadas:\nLatitud: {lat}\nLongitud: {lon}")
+    st.success(f"✅ Ubicación detectada:\nLatitud: {lat}\nLongitud: {lon}")
 
-    # Crear mapa centrado
+    # Mapa base
     mapa = folium.Map(location=[lat, lon], zoom_start=15)
     folium.Marker([lat, lon], tooltip="📍 Tú", popup="Tu ubicación", icon=folium.Icon(color="blue")).add_to(mapa)
 
-    # --- CONSULTA A GOOGLE PLACES API ---
+    # Consulta a Google Places
     API_KEY = st.secrets["google_places_key"]
-    tipos = ["hospital", "clinic", "laboratory"]
+    url = (
+        f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+        f"location={lat},{lon}&rankby=distance&keyword=hospital+clinica+laboratorio&key={API_KEY}"
+    )
+    response = requests.get(url)
+    lugares = response.json().get("results", [])
 
-    for tipo in tipos:
-        url = (
-            f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-            f"location={lat},{lon}&radius=3000&type={tipo}&key={API_KEY}"
-        )
-        respuesta = requests.get(url)
-        resultados = respuesta.json().get("results", [])
-
-        for lugar in resultados:
+    if lugares:
+        for lugar in lugares:
             nombre = lugar.get("name", "Sin nombre")
-            ubicacion = lugar["geometry"]["location"]
             direccion = lugar.get("vicinity", "")
+            ubicacion = lugar["geometry"]["location"]
 
             folium.Marker(
                 [ubicacion["lat"], ubicacion["lng"]],
@@ -44,8 +46,12 @@ if location and location.get("latitude") and location.get("longitude"):
                 icon=folium.Icon(color="green", icon="plus-sign")
             ).add_to(mapa)
 
-    # Mostrar mapa
+    else:
+        st.info("No se encontraron lugares cercanos con esas características.")
+
+    # Mostrar mapa final
     folium_static(mapa)
 
 else:
-    st.warning("⚠️ Presiona el botón para obtener tu ubicación.")
+    st.warning("Presiona el botón 'Actualizar mi ubicación' para comenzar.")
+
