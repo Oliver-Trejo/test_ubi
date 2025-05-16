@@ -20,4 +20,4 @@ if location and location.get("latitude") and location.get("longitude"):
     folium.Marker([lat, lon], tooltip="📍 Aquí estás").add_to(mapa)
     folium_static(mapa)
 else:
-    st.warning("⚠️ Presiona el botón para obtener tu ubicación.")
+    st.warning("⚠ Presiona el botón para obtener tu ubicación.")
